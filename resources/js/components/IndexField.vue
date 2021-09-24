@@ -24,6 +24,12 @@
         @confirm="executeAction"
         @close="closeConfirmationModal"
       />
+      <component
+          :is="actionResponseData.modal"
+          @close="closeActionResponseModal"
+          v-if="showActionResponseModal"
+          :data="actionResponseData"
+      />
     </portal>
   </div>
 </template>
@@ -67,6 +73,8 @@ export default {
     working: false,
     loading: false,
     confirmActionModalOpened: false,
+    showActionResponseModal: false,
+    actionResponseData: {}
   }),
   methods: {
     /**
@@ -138,7 +146,10 @@ export default {
      * Handle the action response. Typically either a message, download or a redirect.
      */
     handleActionResponse(data) {
-      if (data.message) {
+      if (data.modal) {
+        this.actionResponseData = data;
+        this.showActionResponseModal = true;
+      } else if (data.message) {
         this.$parent.$emit("actionExecuted");
         Nova.$emit("action-executed");
         Nova.success(data.message);
@@ -168,11 +179,14 @@ export default {
         Nova.success(this.__("The action ran successfully!"));
       }
     },
+    closeActionResponseModal() {
+      this.showActionResponseModal = false
+    }
   },
 
   computed: {
     selectedResources() {
-      return this.field.resourceId;
+      return [this.field.resourceId];
     },
 
     selectedAction() {

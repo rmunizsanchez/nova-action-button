@@ -1,9 +1,9 @@
 <template>
     <panel-item :field="field">
         <template v-slot:value>
-            <button 
-                class="btn btn-default btn-primary" 
-                @click="confirmActionModalOpened = true" 
+            <button
+                class="btn btn-default btn-primary"
+                @click="confirmActionModalOpened = true"
                 :disabled="field.readonly"
             >
                 {{ buttonText }}
@@ -23,6 +23,12 @@
                     @confirm="executeAction"
                     @close="confirmActionModalOpened = false"
                 />
+              <component
+                  :is="actionResponseData.modal"
+                  @close="closeActionResponseModal"
+                  v-if="showActionResponseModal"
+                  :data="actionResponseData"
+              />
             </portal>
         </template>
     </panel-item>
@@ -35,9 +41,9 @@ export default {
     mixins: [FormField, HandlesValidationErrors, InteractsWithResourceInformation],
 
     props: {
-      resource: String,  
+      resource: Object,
       resourceName: String,
-      resourceId: Number,
+      resourceId: [Number, String],
       field: Object,
       queryString: {
         type: Object,
@@ -55,6 +61,8 @@ export default {
     data: () => ({
       working: false,
       confirmActionModalOpened: false,
+      showActionResponseModal: false,
+      actionResponseData: {}
     }),
 
     methods: {
@@ -127,7 +135,10 @@ export default {
             } catch (e) {
               // Somehow didn't work. We continue so that the response is processed anyway.
             }
-            if (data.message) {
+            if (data.modal) {
+              this.actionResponseData = data;
+              this.showActionResponseModal = true;
+            } else if (data.message) {
                 Nova.$emit('action-executed')
                 Nova.success(data.message)
             } else if (data.deleted) {
@@ -153,11 +164,14 @@ export default {
                 Nova.success(this.__('The action ran successfully!'))
             }
         },
+        closeActionResponseModal() {
+            this.showActionResponseModal = false
+        }
     },
 
     computed: {
         selectedResources() {
-            return this.field.resourceId;
+            return [this.field.resourceId];
         },
 
         selectedAction() {
